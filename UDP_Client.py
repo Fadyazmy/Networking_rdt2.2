@@ -31,11 +31,17 @@ def rdt_send(data_obj):
     chksum = make_checksum(curr_ack, curr_seq, data_obj)
 
     # gets the constructed UDP packet
-    sndpkt = make_pkt(curr_ack, data, chksum)
+    sndpkt = make_pkt(curr_ack, data_obj, chksum)
 
     # send the UDP packet
     udt_send(sndpkt)
 
+def make_checksum(ACK, SEQ, DATA):
+    values = (ACK, SEQ, base64.b64encode(DATA.encode('utf-8')))
+    packer = struct.Struct('I I 8s')
+    packed_data = packer.pack(*values)
+    checksum = hashlib.md5(packed_data).hexdigest().encode('utf-8')
+    return checksum
 
 # DONE
 def make_pkt(curr_ack, data, chksum):
@@ -67,13 +73,6 @@ def corrupt(rcvpkt):
         print('CheckSums Do Not Match')
         return True
 
-
-def make_checksum(ACK, SEQ, DATA):
-    values = (ACK, SEQ, base64.b64encode(DATA.encode('utf-8')))
-    packer = struct.Struct('I I 8s')
-    packed_data = packer.pack(*values)
-    checksum = hashlib.md5(packed_data).hexdigest().encode('utf-8')
-    return checksum
 
 
 def isACK(rcvpkt, ACK_VALUE):
