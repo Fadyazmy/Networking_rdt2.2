@@ -27,8 +27,13 @@ print("UDP target port:", UDP_PORT)
 # DONE
 def rdt_send(data_obj):
     global curr_seq, curr_ack
+
     # Create the Checksum
-    chksum = make_checksum(curr_ack, curr_seq, data_obj)
+    values = (curr_ack, curr_seq, base64.b64encode(data_obj.encode('utf-8')))
+    UDP_Data = struct.Struct('I I 8s')
+    packed_data = UDP_Data.pack(*values)
+    chksum = hashlib.md5(packed_data).hexdigest().encode('utf-8')
+
 
     # gets the constructed UDP packet
     sndpkt = make_pkt(curr_ack, data_obj, chksum)
@@ -37,7 +42,7 @@ def rdt_send(data_obj):
     udt_send(sndpkt)
 
 def make_checksum(ACK, SEQ, DATA):
-    values = (ACK, SEQ, base64.b64encode(DATA.encode('utf-8')))
+    values = (ACK, SEQ, DATA)
     packer = struct.Struct('I I 8s')
     packed_data = packer.pack(*values)
     checksum = hashlib.md5(packed_data).hexdigest().encode('utf-8')
@@ -48,7 +53,7 @@ def make_pkt(curr_ack, data, chksum):
     global curr_seq
 
     # Build the UDP Packet
-    values = (curr_ack, curr_seq, base64.b64encode(data.encode('utf-8')), chksum)
+    values = (curr_ack, curr_seq,  base64.b64encode(data.encode('utf-8')), chksum)
     UDP_Packet_Data = struct.Struct('I I 8s 32s')
     UDP_Packet = UDP_Packet_Data.pack(*values)
     return UDP_Packet
@@ -66,7 +71,7 @@ def corrupt(rcvpkt):
     # Calculate new checksum of the  [ ACK, SEQ, DATA ]
     checksum = make_checksum(rcvpkt[0], rcvpkt[1], rcvpkt[2])
     # Compare calculated chechsum with checksum value in packet <-- NOT SURE ABOUT THIS
-    if base64.b64encode(rcvpkt[3]) == checksum:
+    if rcvpkt[3] == checksum:
         print('CheckSums is OK')
         return False
     else:
@@ -112,7 +117,7 @@ for data_object in data_list:
     while success == False:
         # send the data item
         sock.settimeout(0)
-        rdt_send(data_object)
+        rdt_send('b' + data_object)
         print('Data sent: ', data_object)
 
         # Receive Data
