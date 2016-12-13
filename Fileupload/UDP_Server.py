@@ -3,11 +3,9 @@ import socket
 import struct
 import sys
 import hashlib
-import base64
 
 UDP_IP = "127.0.0.1"
 UDP_PORT = 5006
-
 #Integer, Integer, 8 letter char array, 32 letter char array
 unpacker = struct.Struct('I I 8s 32s')
 
